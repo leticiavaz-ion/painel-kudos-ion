@@ -47,6 +47,15 @@ header h1 { font-size: 1.7rem; font-weight: 700; color: #111827; }
 .modal-link { display: inline-block; padding: 8px 18px; background: #f3f4f6; border-radius: 8px; text-decoration: none; color: #374151; font-size: 0.85rem; font-weight: 600; }
 .modal-link:hover { background: #e5e7eb; }
 .modal-close { float: right; background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #6b7280; padding: 4px 8px; }
+
+.ac-wrap{position:relative;flex:1;min-width:180px;}
+.ac-wrap input{width:100%;padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:.9rem;outline:none;box-sizing:border-box;}
+.ac-wrap input:focus{border-color:#7e6bb8;box-shadow:0 0 0 2px rgba(126,107,184,.15);}
+.ac-list{position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;z-index:999;display:none;}
+.ac-list.open{display:block;}
+.ac-item{padding:8px 12px;cursor:pointer;font-size:.85rem;color:#333;}
+.ac-item:hover,.ac-item.selected{background:#f0edf8;color:#7e6bb8;}
+
 </style>
 </head>
 <body>
@@ -63,8 +72,8 @@ header h1 { font-size: 1.7rem; font-weight: 700; color: #111827; }
     <option>Finíssimo e Tal</option>
     <option>Tente outra vez</option>
   </select>
-  <select id="sel-dest" onchange="applyFilters()"><option value="">Destinatário (e-mail)</option></select>
-  <select id="sel-rem" onchange="applyFilters()"><option value="">Remetente (e-mail)</option></select>
+  <div class="ac-wrap"><input id="inp-dest" type="text" placeholder="Destinatário (e-mail)" autocomplete="off" oninput="acInput(this,'dest')" onblur="acBlur('dest')"><div id="ac-dest" class="ac-list"></div></div>
+  <div class="ac-wrap"><input id="inp-rem" type="text" placeholder="Remetente (e-mail)" autocomplete="off" oninput="acInput(this,'rem')" onblur="acBlur('rem')"><div id="ac-rem" class="ac-list"></div></div>
   <button onclick="clearFilters()">× Limpar</button>
 </div>
 <div class="send-section">
@@ -91,26 +100,23 @@ const TIPO_IMAGE = {"Conte com a gente": "data:image/png;base64,iVBORw0KGgoAAAAN
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 (function buildSelects(){
-  const dests=[...new Set(KUDOS.map(k=>k.email_destinatario).filter(Boolean))].sort();
-  const rems=[...new Set(KUDOS.map(k=>k.email_remetente).filter(Boolean))].sort();
-  const sd=document.getElementById('sel-dest'), sr=document.getElementById('sel-rem');
-  dests.forEach(e=>{const o=document.createElement('option');o.value=o.textContent=e;sd.appendChild(o);});
-  rems.forEach(e=>{const o=document.createElement('option');o.value=o.textContent=e;sr.appendChild(o);});
+  window.dests=[...new Set(KUDOS.map(k=>k.email_destinatario).filter(Boolean))].sort();
+  const window.rems=[...new Set(KUDOS.map(k=>k.email_remetente).filter(e=>e&&e.includes('@')))].sort();
 })();
 
 function applyFilters(){
   const tipo=document.getElementById('sel-tipo').value;
-  const dest=document.getElementById('sel-dest').value;
-  const rem=document.getElementById('sel-rem').value;
-  const list=KUDOS.filter(k=>(!tipo||k.tipo===tipo)&&(!dest||k.email_destinatario===dest)&&(!rem||k.email_remetente===rem));
+  const dest=(document.getElementById('inp-dest').value||'').trim().toLowerCase();
+  const rem=(document.getElementById('inp-rem').value||'').trim().toLowerCase();
+  const list=KUDOS.filter(k=>(!tipo||k.tipo===tipo)&&(!dest||k.email_destinatario.toLowerCase()===dest)&&(!rem||k.email_remetente.toLowerCase()===rem));
   renderCards(list);
   document.getElementById('count').textContent=list.length;
 }
 
 function clearFilters(){
   document.getElementById('sel-tipo').value='';
-  document.getElementById('sel-dest').value='';
-  document.getElementById('sel-rem').value='';
+  document.getElementById('inp-dest').value='';
+  document.getElementById('inp-rem').value='';
   applyFilters();
 }
 
@@ -161,6 +167,30 @@ function closeModal(e){if(e.target===document.getElementById('overlay'))document
 
 document.getElementById('total').textContent=KUDOS.length;
 applyFilters();
+
+// ── Autocomplete ──────────────────────────────────────────────────────────
+function acInput(el, key){
+  const val = el.value.trim().toLowerCase();
+  const listEl = document.getElementById('ac-' + key);
+  const pool = key === 'dest' ? dests : rems;
+  if(val.length < 3){ listEl.classList.remove('open'); return; }
+  const matches = pool.filter(e => e.toLowerCase().includes(val));
+  if(!matches.length){ listEl.classList.remove('open'); return; }
+  listEl.innerHTML = matches.map(e =>
+    `<div class="ac-item" onmousedown="acSelect('${key}','${e}')">${e}</div>`
+  ).join('');
+  listEl.classList.add('open');
+}
+function acSelect(key, val){
+  document.getElementById('inp-' + key).value = val;
+  document.getElementById('ac-' + key).classList.remove('open');
+  applyFilters();
+}
+function acBlur(key){
+  // small delay so onmousedown fires first
+  setTimeout(()=>{ document.getElementById('ac-' + key).classList.remove('open'); }, 150);
+}
+
 </script>
 </body>
 </html>
