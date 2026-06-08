@@ -100,8 +100,8 @@ const TIPO_IMAGE = {"Conte com a gente": "data:image/png;base64,iVBORw0KGgoAAAAN
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 (function buildSelects(){
-  window.dests=[...new Set(KUDOS.map(k=>k.email_destinatario).filter(Boolean))].sort();
-  const window.rems=[...new Set(KUDOS.map(k=>k.email_remetente).filter(e=>e&&e.includes('@')))].sort();
+  window.dests=[...new Set(KUDOS.map(k=>k.email_destinatario).filter(e=>e&&e.includes('@')))].sort();
+  window.rems=[...new Set(KUDOS.map(k=>k.email_remetente).filter(e=>e&&e.includes('@')))].sort();
 })();
 
 function applyFilters(){
